@@ -3,6 +3,7 @@ setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 library(tidyverse)
 library(caret)
 library(haven)
+library(jtools)
 
 # Data Import and Cleaning
 # zap_missing() converts tagged missing values into standard R NA value. Used read_sav() from haven to read in GSS2016.sav
@@ -16,3 +17,8 @@ gss_tbl <- read_sav("../data/GSS2016.sav", user_na = TRUE) %>%
   select_if(~ mean(is.na(.)) < 0.75)
   
 # Visualization
+ggplot(gss_tbl, aes(x = mosthrs)) +
+  geom_histogram(binwidth = 10, fill = "#A80000") +
+  xlab("Work Hours") +
+  ylab("Count") +
+  theme_apa()
