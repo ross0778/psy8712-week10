@@ -77,3 +77,19 @@ elastic_model <- train(
 )
 
 # this is for the random forest model
+forest_model <- train(
+  mosthrs ~ ., # this tells the train function to model mosthrs as a function of all other variables in gss_training, which is defined in the following line
+  data = gss_training, # this tells the model to use gss_training as the data set
+  method = "ranger", # this specifies the random forest model
+  na.action = na.pass, # this tells the train function to keep missing values
+  preProcess = "medianImpute", # this specifies that we use median imputation to impute any remaining missing values
+  tuneLength = 10, # this hyperparameter tells the function try 10 mtry
+  trControl = trainControl( # this defines the control parameters
+    method = "cv", # this defines the use of K-fold cross-validation
+    number = 10, # this defines the number of folds, so 10-fold cross-validation
+    verboseIter = TRUE, # this tracks the progress of the training
+    indexOut = fold_indices # this uses the same folds for all models
+  )
+)
+
+# this is for the eXtreme Gradient Boosting model
