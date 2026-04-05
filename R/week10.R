@@ -4,6 +4,8 @@ library(tidyverse)
 library(caret)
 library(haven)
 library(jtools)
+library(xgboost)
+library(devtools)
 
 # Data Import and Cleaning
 # zap_missing() converts tagged missing values into standard R NA value. Used read_sav() from haven to read in GSS2016.sav
@@ -96,7 +98,7 @@ forest_model <- train(
 extreme_model <- train(
   mosthrs ~ ., # this tells the train function to model mosthrs as a function of all other variables in gss_training, which is defined in the following line
   data = gss_training, # this tells the model to use gss_training as the data set
-  method = "xgbTree", # this specifies the eXtreme Gradient Boosting model
+  method = "xgbLinear", # this specifies the eXtreme Gradient Boosting model
   na.action = na.pass, # this tells the train function to keep missing values
   preProcess = "medianImpute", # this specifies that we use median imputation to impute any remaining missing values
   tuneLength = 10, # this hyperparameter tells the function try 10 mtry values
@@ -109,3 +111,36 @@ extreme_model <- train(
 )
 
 # Publication
+# this function calculates the correlation between the predictions from the trained models on the holdout data and finds the correlation between these predictions and the actual values. I then square to find R^2
+holdout_rsq <- function(model, holdout) { # this creates a function that takes the trained model and the holdout data. Made a function so this process wouldn't have to be repeated for the four models
+  predicted <- predict(model, holdout, na.action = na.pass) # this gets the predicted mosthrs values for each row in the holdout data using the trained model
+  cor(predicted, holdout$mosthrs)^2 # this finds the correlation between the predicted values and the actual mosthrs values and then finds the R^2 by squaring it
+}
+
+table1_tbl <- tibble( # this creates the tibble
+  algo = c("OLS Regression", "Elastic Net", "Random Forest", "eXtreme Gradient Boosting"), # this specifies the type of algorithm used for each
+  cv_rsq = c( # wrapping max() on each model's results provides the highest CV R^2
+    max(ols_model$results$Rsquared, na.rm = TRUE),
+    max(elastic_model$results$Rsquared, na.rm = TRUE),
+    max(forest_model$results$Rsquared, na.rm = TRUE),
+    max(extreme_model$results$Rsquared, na.rm = TRUE)
+  ),
+  ho_rsq = c( # this applies the function created at the top of this section to each model using the gss_holdout data, giving the final holdout CV R^2 for each algo
+    holdout_rsq(ols_model, gss_holdout),
+    holdout_rsq(elastic_model, gss_holdout),
+    holdout_rsq(forest_model, gss_holdout),
+    holdout_rsq(extreme_model, gss_holdout)
+  )
+) %>% 
+  # this rounds all values to 2 decimal places using formatC() and gets rid of the leading zeros using str_remove() and regex
+  mutate(across(c(cv_rsq, ho_rsq), ~ formatC(round(.x, 2), format = "f", digits = 2) %>% 
+                  str_remove("^0")))
+
+table1_tbl
+write_csv(table1_tbl, "table1.csv")
+
+# 1. How did your results change between models? Why do you think this happened, specifically?
+
+# 2. How did your results change between k-fold CV and holdout CV? Why do you think this happened, specifically?
+
+# 3. Among the four models, which would you choose for a real-life prediction problem, and why? Are there tradeoffs?
