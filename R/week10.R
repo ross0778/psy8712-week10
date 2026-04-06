@@ -137,10 +137,22 @@ table1_tbl <- tibble( # this creates the tibble
                   str_remove("^0")))
 
 table1_tbl
-write_csv(table1_tbl, "table1.csv")
+write_csv(table1_tbl, "../out/table1.csv")
 
 # 1. How did your results change between models? Why do you think this happened, specifically?
+# Results significantly improved when moving from OLS to the following elastic net, random forest, and extreme gradient boosting models. 
+# OLS had the lowest CV R^2 of .13, which does make sense, as OLS only accounts for linear relationships.
+# Moving to the elastic net model improved the CV R^2 drastically to 0.88. I think this is probably because elastic net reduces overfitting.
+# Random forest continued to improve up to .92, which I think is because it is able to capture both non-linear relationships and interactions.
+# Finally, extreme gradient boosting had the highest CV R^2 at .99. This seems extremely high and I believe this may be due to overfitting. This could also be because I used xgbLinear instead of xgbTree, which fits a linear model instead of building sequential decision trees.
 
 # 2. How did your results change between k-fold CV and holdout CV? Why do you think this happened, specifically?
+# Each model showed a clear decrease from CV R^2 to holdout R^2. Some of these changes were especially significant, with the drop in OLS regression showing that the OLS model failed to generalize beyond the trianing data with the holdout R^2 at .00.
+# I think this happened because the holdout data is what is not used during training, meaning this may be a more accurate estimate.
 
 # 3. Among the four models, which would you choose for a real-life prediction problem, and why? Are there tradeoffs?
+# I would use the random forest model for a real-life prediction problem.
+# This model had a CV R^2 of .92 and a holdout R^2 of .51.
+# I would choose the random forest model instead of the extreme gradient boosting model, despite the latter having a slightly higher CV R^2 and holdout R^2, because the nearly perfect CV R^2 seems to imply overfitting may be an issue.
+# There are tradeoffs however. Random forest models used bagged modeling and reduce variance without needing the hyperparameters that the extreme gradient boosting requires.
+# On the other hand, with models like elastic net, you're able to read individual predictor coefficients, which you can't do with random forest models.
